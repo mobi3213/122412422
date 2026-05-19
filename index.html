@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-  <!-- Firebase SDK (подключаем через CDN) -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
@@ -900,15 +900,15 @@
   </footer>
 
   <script>
-    // ===== ВАША КОНФИГУРАЦИЯ FIREBASE =====
-    // ⚠️ ВСТАВЬТЕ СВОИ ДАННЫЕ ВМЕСТО ТЕКСТА НИЖЕ ⚠️
+    // ===== ВАША КОНФИГУРАЦИЯ FIREBASE (УЖЕ ВСТАВЛЕНА) =====
     const firebaseConfig = {
-      apiKey: "ВАШ_API_KEY",
-      authDomain: "ВАШ_AUTH_DOMAIN",
-      projectId: "ВАШ_PROJECT_ID",
-      storageBucket: "ВАШ_STORAGE_BUCKET",
-      messagingSenderId: "ВАШ_SENDER_ID",
-      appId: "ВАШ_APP_ID"
+      apiKey: "AIzaSyDBAZ2887ekcEGUcb9gTh2mwRLkrYDLqUE",
+      authDomain: "well-played-app.firebaseapp.com",
+      databaseURL: "https://well-played-app-default-rtdb.firebaseio.com",
+      projectId: "well-played-app",
+      storageBucket: "well-played-app.firebasestorage.app",
+      messagingSenderId: "926709321013",
+      appId: "1:926709321013:web:b90a53e2a4e0e9a228507c"
     };
 
     // Инициализация Firebase
@@ -1049,7 +1049,6 @@
         
         const currentUserId = currentUser ? currentUser.uid : null;
         
-        // Проверяем, кто в команде с текущим пользователем
         let teamMembers = [];
         if (currentUserId) {
           const teamSnapshot = await database.ref('teams/' + currentUserId).once('value');
@@ -1126,7 +1125,6 @@
           if (result) {
             await database.ref('invites/' + currentUser.uid + '/' + snapshot.key).update({ status: 'accepted' });
             
-            // Объединяем в команду
             const teamRef = database.ref('teams/' + invite.fromUserId);
             const teamSnapshot = await teamRef.once('value');
             let members = teamSnapshot.val()?.members || [invite.fromUserId];
@@ -1241,7 +1239,8 @@
         updateMyTeamDisplay();
       } else {
         await renderPlayersList();
-        document.getElementById('myTeamCard').style.display = 'none';
+        const myTeamCard = document.getElementById('myTeamCard');
+        if (myTeamCard) myTeamCard.style.display = 'none';
       }
     });
 
