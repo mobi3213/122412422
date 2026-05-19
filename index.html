@@ -252,6 +252,26 @@
       font-size: 14px;
     }
 
+    .players-list {
+      max-height: 500px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+
+    .players-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .players-list::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+    }
+
+    .players-list::-webkit-scrollbar-thumb {
+      background: #8b5cf6;
+      border-radius: 10px;
+    }
+
     .player-card {
       background: #11182c;
       border-radius: 24px;
@@ -298,6 +318,12 @@
       align-items: center;
       flex-wrap: wrap;
       gap: 12px;
+    }
+
+    .empty-players {
+      text-align: center;
+      padding: 40px;
+      color: rgba(255,255,255,0.5);
     }
 
     .features {
@@ -458,7 +484,7 @@
       font-size: 14px;
     }
 
-    .input-group input {
+    .input-group input, .input-group select {
       width: 100%;
       padding: 14px 16px;
       border-radius: 12px;
@@ -470,10 +496,14 @@
       font-family: 'Inter', sans-serif;
     }
 
-    .input-group input:focus {
+    .input-group input:focus, .input-group select:focus {
       outline: none;
       border-color: #8b5cf6;
       background: rgba(255,255,255,0.08);
+    }
+
+    .input-group select option {
+      background: #090d18;
     }
 
     .modal-btn {
@@ -645,6 +675,26 @@
         <label>Подтвердите пароль</label>
         <input type="password" id="regConfirmPassword" placeholder="••••••••">
       </div>
+      <div class="input-group">
+        <label>Любимая игра</label>
+        <select id="regGame">
+          <option value="CS2">CS2</option>
+          <option value="Dota 2">Dota 2</option>
+          <option value="Valorant">Valorant</option>
+          <option value="League of Legends">League of Legends</option>
+          <option value="PUBG">PUBG</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Ваш ранг</label>
+        <select id="regRank">
+          <option value="Новичок">Новичок</option>
+          <option value="Любитель">Любитель</option>
+          <option value="Продвинутый">Продвинутый</option>
+          <option value="Профи">Профи</option>
+          <option value="Легенда">Легенда</option>
+        </select>
+      </div>
       <div id="registerError" class="error-message"></div>
       <button class="btn btn-primary modal-btn" onclick="handleRegister()">Создать аккаунт</button>
       <div class="modal-footer">
@@ -707,7 +757,7 @@
 
       <div class="stats">
         <div>
-          <h3>1000+</h3>
+          <h3 id="totalUsers">0</h3>
           <span>Пользователей</span>
         </div>
 
@@ -727,58 +777,14 @@
       <div class="card-top">
         <div>
           <h2 style="font-size: 32px; margin-bottom: 8px;">Поиск команды</h2>
-          <p style="color: rgba(255,255,255,0.5);">Подбор по интересам и навыкам</p>
+          <p style="color: rgba(255,255,255,0.5);">Наши игроки (только зарегистрированные)</p>
         </div>
 
-        <div class="online">online</div>
+        <div class="online" id="onlineCount">online</div>
       </div>
 
-      <div class="player-card">
-        <div class="player-head">
-          <div>
-            <h4>CS2</h4>
-            <p>Entry Fragger</p>
-          </div>
-
-          <div class="rank">10 lvl FACEIT</div>
-        </div>
-
-        <div class="player-footer">
-          <span>⭐ Не токсик</span>
-          <button class="btn btn-secondary" onclick="checkAuthAndInvite('CS2')">Пригласить</button>
-        </div>
-      </div>
-
-      <div class="player-card">
-        <div class="player-head">
-          <div>
-            <h4>Dota 2</h4>
-            <p>Support</p>
-          </div>
-
-          <div class="rank">Immortal</div>
-        </div>
-
-        <div class="player-footer">
-          <span>⭐ Хороший микро</span>
-          <button class="btn btn-secondary" onclick="checkAuthAndInvite('Dota 2')">Пригласить</button>
-        </div>
-      </div>
-
-      <div class="player-card">
-        <div class="player-head">
-          <div>
-            <h4>Valorant</h4>
-            <p>Duelist</p>
-          </div>
-
-          <div class="rank">Ascendant</div>
-        </div>
-
-        <div class="player-footer">
-          <span>⭐ Командный игрок</span>
-          <button class="btn btn-secondary" onclick="checkAuthAndInvite('Valorant')">Пригласить</button>
-        </div>
+      <div class="players-list" id="playersList">
+        <!-- Список игроков будет загружаться сюда -->
       </div>
     </div>
   </main>
@@ -838,9 +844,72 @@
   </footer>
 
   <script>
-    // Хранилище пользователей (в реальном проекте это будет база данных)
+    // Хранилище пользователей
     let users = JSON.parse(localStorage.getItem('wellplayed_users')) || [];
     let currentUser = JSON.parse(localStorage.getItem('wellplayed_currentUser')) || null;
+
+    // Функция для отображения списка игроков
+    function renderPlayersList() {
+      const playersList = document.getElementById('playersList');
+      const totalUsersSpan = document.getElementById('totalUsers');
+      const onlineCountSpan = document.getElementById('onlineCount');
+      
+      // Обновляем общее количество пользователей
+      totalUsersSpan.textContent = users.length;
+      onlineCountSpan.textContent = `${users.length} онлайн`;
+      
+      if (users.length === 0) {
+        playersList.innerHTML = `
+          <div class="empty-players">
+            😢 Пока нет зарегистрированных пользователей
+            <br>
+            <button class="btn btn-primary" style="margin-top: 16px;" onclick="openRegisterModal()">Стать первым!</button>
+          </div>
+        `;
+        return;
+      }
+      
+      // Сортируем пользователей (новые сверху)
+      const sortedUsers = [...users].reverse();
+      
+      // Генерируем карточки игроков
+      playersList.innerHTML = sortedUsers.map(user => `
+        <div class="player-card">
+          <div class="player-head">
+            <div>
+              <h4>${escapeHtml(user.username)}</h4>
+              <p>${escapeHtml(user.favoriteGame || 'Не указана')} • ${escapeHtml(user.role || 'Игрок')}</p>
+            </div>
+            <div class="rank">${escapeHtml(user.rank || 'Новичок')}</div>
+          </div>
+          <div class="player-footer">
+            <span>⭐ ${getReputationStars(user)}</span>
+            <button class="btn btn-secondary" onclick="invitePlayer('${escapeHtml(user.username)}', '${escapeHtml(user.favoriteGame || 'игру')}')">Пригласить</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Функция для получения звёзд репутации
+    function getReputationStars(user) {
+      if (user.reputation) {
+        return '★'.repeat(user.reputation) + '☆'.repeat(5 - user.reputation);
+      }
+      // Случайная репутация для новых пользователей
+      const stars = Math.floor(Math.random() * 3) + 3; // 3-5 звёзд
+      return '★'.repeat(stars) + '☆'.repeat(5 - stars);
+    }
+
+    // Функция для экранирования HTML (безопасность)
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
 
     function showToast(message) {
       const toast = document.getElementById('toast');
@@ -874,6 +943,8 @@
       document.getElementById('regEmail').value = '';
       document.getElementById('regPassword').value = '';
       document.getElementById('regConfirmPassword').value = '';
+      document.getElementById('regGame').value = 'CS2';
+      document.getElementById('regRank').value = 'Новичок';
     }
 
     function closeRegisterModal() {
@@ -910,6 +981,8 @@
       const email = document.getElementById('regEmail').value.trim();
       const password = document.getElementById('regPassword').value;
       const confirmPassword = document.getElementById('regConfirmPassword').value;
+      const favoriteGame = document.getElementById('regGame').value;
+      const rank = document.getElementById('regRank').value;
       const errorDiv = document.getElementById('registerError');
 
       if (!username || !email || !password || !confirmPassword) {
@@ -946,17 +1019,36 @@
         id: Date.now(),
         username: username,
         email: email,
-        password: password
+        password: password,
+        favoriteGame: favoriteGame,
+        rank: rank,
+        role: getRoleForGame(favoriteGame),
+        reputation: 4,
+        registeredAt: new Date().toLocaleString()
       };
 
       users.push(newUser);
       localStorage.setItem('wellplayed_users', JSON.stringify(users));
+
+      // Обновляем список игроков
+      renderPlayersList();
 
       currentUser = newUser;
       localStorage.setItem('wellplayed_currentUser', JSON.stringify(newUser));
       updateUIForLoggedInUser();
       closeRegisterModal();
       showToast(`✅ Регистрация прошла успешно! Добро пожаловать, ${username}!`);
+    }
+
+    function getRoleForGame(game) {
+      const roles = {
+        'CS2': 'Entry Fragger',
+        'Dota 2': 'Support',
+        'Valorant': 'Duelist',
+        'League of Legends': 'Mid Laner',
+        'PUBG': 'Sniper'
+      };
+      return roles[game] || 'Игрок';
     }
 
     function logout() {
@@ -983,11 +1075,11 @@
       }
     }
 
-    function checkAuthAndInvite(gameName) {
+    function invitePlayer(playerName, gameName) {
       if (currentUser) {
-        showToast(`✉️ Приглашение отправлено пользователю ${gameName}!`);
+        showToast(`✉️ Приглашение отправлено игроку ${playerName} в ${gameName}!`);
       } else {
-        showToast(`🔐 Чтобы пригласить игрока в ${gameName}, сначала войдите в аккаунт`);
+        showToast(`🔐 Чтобы пригласить ${playerName}, сначала войдите в аккаунт`);
         openLoginModal();
       }
     }
@@ -1009,8 +1101,9 @@
       if (event.target === registerModal) closeRegisterModal();
     }
 
-    // При загрузке страницы обновляем UI
+    // При загрузке страницы обновляем UI и список игроков
     updateUIForLoggedInUser();
+    renderPlayersList();
   </script>
 </body>
 </html>
