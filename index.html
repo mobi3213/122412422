@@ -163,12 +163,32 @@
       border-color: #8b5cf6;
     }
 
+    .btn-success {
+      background: rgba(34,197,94,0.2);
+      border: 1px solid #22c55e;
+      color: #86efac;
+    }
+
+    .btn-success:hover {
+      background: rgba(34,197,94,0.3);
+    }
+
+    .btn-danger {
+      background: rgba(239,68,68,0.2);
+      border: 1px solid #ef4444;
+      color: #fca5a5;
+    }
+
+    .btn-danger:hover {
+      background: rgba(239,68,68,0.3);
+    }
+
     .hero {
       min-height: 92vh;
       display: grid;
       grid-template-columns: 1.1fr 0.9fr;
       gap: 70px;
-      align-items: center;
+      align-items: start;
       padding: 60px 0;
     }
 
@@ -320,6 +340,17 @@
       gap: 12px;
     }
 
+    .in-team-badge {
+      background: rgba(34,211,238,0.2);
+      color: #22d3ee;
+      padding: 6px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     .empty-players {
       text-align: center;
       padding: 40px;
@@ -380,6 +411,49 @@
     .feature-card p {
       color: rgba(255,255,255,0.6);
       line-height: 1.7;
+    }
+
+    /* Группа пользователя */
+    .my-team-card {
+      background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(34,211,238,0.1));
+      border: 1px solid rgba(139,92,246,0.4);
+      border-radius: 24px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    .my-team-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .my-team-header h3 {
+      font-size: 18px;
+      color: #c4b5fd;
+    }
+
+    .team-members {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .team-member {
+      background: rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .leave-team-btn {
+      padding: 8px 16px;
+      font-size: 13px;
     }
 
     footer {
@@ -535,6 +609,17 @@
       display: none;
     }
 
+    /* Окно приглашения */
+    .invite-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .invite-actions button {
+      flex: 1;
+    }
+
     .user-info {
       display: flex;
       align-items: center;
@@ -576,6 +661,57 @@
 
     .toast.show {
       transform: translateX(0);
+    }
+
+    /* Уведомления */
+    .notification-badge {
+      position: relative;
+      cursor: pointer;
+    }
+
+    .notification-count {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #ef4444;
+      color: white;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+
+    .notifications-panel {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      width: 320px;
+      background: #0f172a;
+      border: 1px solid rgba(139,92,246,0.3);
+      border-radius: 20px;
+      z-index: 1002;
+      display: none;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .notifications-panel.show {
+      display: block;
+    }
+
+    .notification-item {
+      padding: 15px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .notification-item:hover {
+      background: rgba(139,92,246,0.1);
+    }
+
+    .notification-item.unread {
+      background: rgba(34,211,238,0.05);
+      border-left: 3px solid #22d3ee;
     }
 
     @media (max-width: 1000px) {
@@ -728,12 +864,20 @@
       </div>
 
       <div class="user-info" id="userInfo" style="display: none;">
-        <div class="user-avatar" id="userAvatar">U</div>
+        <div class="notification-badge" onclick="toggleNotifications()">
+          <div class="user-avatar" id="userAvatar">U</div>
+          <span class="notification-count" id="notifCount" style="display: none;">0</span>
+        </div>
         <span id="userName">User</span>
         <button class="btn btn-secondary logout-btn" onclick="logout()">Выйти</button>
       </div>
     </div>
   </header>
+
+  <!-- Панель уведомлений -->
+  <div id="notificationsPanel" class="notifications-panel">
+    <div id="notificationsList"></div>
+  </div>
 
   <main class="container hero">
     <div>
@@ -770,6 +914,15 @@
           <h3>4.9</h3>
           <span>Средний рейтинг</span>
         </div>
+      </div>
+
+      <!-- Моя команда -->
+      <div id="myTeamCard" class="my-team-card" style="display: none;">
+        <div class="my-team-header">
+          <h3>🎮 Моя команда</h3>
+          <button class="btn btn-secondary leave-team-btn" onclick="leaveTeam()">Покинуть команду</button>
+        </div>
+        <div id="teamMembers" class="team-members"></div>
       </div>
     </div>
 
@@ -844,17 +997,157 @@
   </footer>
 
   <script>
-    // Хранилище пользователей
+    // Хранилище данных
     let users = JSON.parse(localStorage.getItem('wellplayed_users')) || [];
     let currentUser = JSON.parse(localStorage.getItem('wellplayed_currentUser')) || null;
+    let teams = JSON.parse(localStorage.getItem('wellplayed_teams')) || {};
+    let notifications = JSON.parse(localStorage.getItem('wellplayed_notifications')) || {};
 
-    // Функция для отображения списка игроков
+    function saveData() {
+      localStorage.setItem('wellplayed_users', JSON.stringify(users));
+      localStorage.setItem('wellplayed_teams', JSON.stringify(teams));
+      localStorage.setItem('wellplayed_notifications', JSON.stringify(notifications));
+    }
+
+    function addNotification(userId, notification) {
+      if (!notifications[userId]) notifications[userId] = [];
+      notifications[userId].unshift({
+        id: Date.now(),
+        ...notification,
+        read: false,
+        timestamp: new Date().toLocaleString()
+      });
+      saveData();
+      
+      // Если это текущий пользователь, обновляем UI
+      if (currentUser && currentUser.id == userId) {
+        updateNotificationBadge();
+        renderNotificationsList();
+      }
+    }
+
+    function updateNotificationBadge() {
+      const notifCount = document.getElementById('notifCount');
+      if (currentUser && notifications[currentUser.id]) {
+        const unreadCount = notifications[currentUser.id].filter(n => !n.read).length;
+        if (unreadCount > 0) {
+          notifCount.textContent = unreadCount;
+          notifCount.style.display = 'block';
+        } else {
+          notifCount.style.display = 'none';
+        }
+      } else {
+        notifCount.style.display = 'none';
+      }
+    }
+
+    function renderNotificationsList() {
+      const container = document.getElementById('notificationsList');
+      if (!currentUser || !notifications[currentUser.id] || notifications[currentUser.id].length === 0) {
+        container.innerHTML = '<div style="padding: 20px; text-align: center; color: rgba(255,255,255,0.5);">Нет уведомлений</div>';
+        return;
+      }
+      
+      container.innerHTML = notifications[currentUser.id].map(notif => `
+        <div class="notification-item ${notif.read ? '' : 'unread'}" onclick="markNotificationRead(${notif.id})">
+          <div style="font-weight: bold;">${notif.title}</div>
+          <div style="font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 5px;">${notif.message}</div>
+          <div style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 5px;">${notif.timestamp}</div>
+          ${notif.type === 'invite' && !notif.processed ? `
+            <div class="invite-actions">
+              <button class="btn btn-success" onclick="event.stopPropagation(); acceptInvite(${notif.id}, '${notif.fromUser}', '${notif.game}')">✅ Принять</button>
+              <button class="btn btn-danger" onclick="event.stopPropagation(); declineInvite(${notif.id})">❌ Отклонить</button>
+            </div>
+          ` : ''}
+        </div>
+      `).join('');
+    }
+
+    function markNotificationRead(notifId) {
+      if (currentUser && notifications[currentUser.id]) {
+        const notif = notifications[currentUser.id].find(n => n.id === notifId);
+        if (notif) notif.read = true;
+        saveData();
+        renderNotificationsList();
+        updateNotificationBadge();
+      }
+    }
+
+    function toggleNotifications() {
+      const panel = document.getElementById('notificationsPanel');
+      panel.classList.toggle('show');
+      if (panel.classList.contains('show')) {
+        renderNotificationsList();
+      }
+    }
+
+    function acceptInvite(notifId, fromUserName, game) {
+      const fromUser = users.find(u => u.username === fromUserName);
+      if (!fromUser) return;
+      
+      // Создаём или обновляем команду
+      if (!teams[fromUser.id]) teams[fromUser.id] = { leader: fromUser.id, members: [fromUser.id] };
+      if (!teams[currentUser.id]) teams[currentUser.id] = { leader: currentUser.id, members: [currentUser.id] };
+      
+      // Объединяем команды
+      const team1 = teams[fromUser.id];
+      const team2 = teams[currentUser.id];
+      const allMembers = [...new Set([...team1.members, ...team2.members])];
+      const newTeam = { leader: team1.leader, members: allMembers };
+      
+      allMembers.forEach(memberId => {
+        teams[memberId] = newTeam;
+      });
+      
+      saveData();
+      
+      // Удаляем уведомление
+      if (notifications[currentUser.id]) {
+        notifications[currentUser.id] = notifications[currentUser.id].filter(n => n.id !== notifId);
+        saveData();
+      }
+      
+      showToast(`✅ Вы присоединились к команде ${fromUserName}!`);
+      renderPlayersList();
+      updateMyTeamDisplay();
+      
+      // Уведомляем отправителя
+      addNotification(fromUser.id, {
+        title: '🎉 Приглашение принято!',
+        message: `${currentUser.username} присоединился к вашей команде!`,
+        type: 'accept'
+      });
+    }
+
+    function declineInvite(notifId) {
+      if (notifications[currentUser.id]) {
+        const notif = notifications[currentUser.id].find(n => n.id === notifId);
+        const fromUserName = notif?.fromUser;
+        
+        notifications[currentUser.id] = notifications[currentUser.id].filter(n => n.id !== notifId);
+        saveData();
+        
+        showToast(`❌ Вы отклонили приглашение`);
+        renderNotificationsList();
+        
+        if (fromUserName) {
+          const fromUser = users.find(u => u.username === fromUserName);
+          if (fromUser) {
+            addNotification(fromUser.id, {
+              title: '😔 Приглашение отклонено',
+              message: `${currentUser.username} отклонил ваше приглашение`,
+              type: 'decline'
+            });
+          }
+        }
+      }
+    }
+
     function renderPlayersList() {
       const playersList = document.getElementById('playersList');
       const totalUsersSpan = document.getElementById('totalUsers');
       const onlineCountSpan = document.getElementById('onlineCount');
       
-      // Обновляем общее количество пользователей
       totalUsersSpan.textContent = users.length;
       onlineCountSpan.textContent = `${users.length} онлайн`;
       
@@ -869,38 +1162,126 @@
         return;
       }
       
-      // Сортируем пользователей (новые сверху)
       const sortedUsers = [...users].reverse();
       
-      // Генерируем карточки игроков
-      playersList.innerHTML = sortedUsers.map(user => `
-        <div class="player-card">
-          <div class="player-head">
-            <div>
-              <h4>${escapeHtml(user.username)}</h4>
-              <p>${escapeHtml(user.favoriteGame || 'Не указана')} • ${escapeHtml(user.role || 'Игрок')}</p>
+      playersList.innerHTML = sortedUsers.map(user => {
+        const isInMyTeam = currentUser && teams[currentUser.id] && teams[currentUser.id].members.includes(user.id);
+        const isMe = currentUser && currentUser.id === user.id;
+        
+        if (isMe) return '';
+        
+        return `
+          <div class="player-card">
+            <div class="player-head">
+              <div>
+                <h4>${escapeHtml(user.username)}</h4>
+                <p>${escapeHtml(user.favoriteGame || 'Не указана')} • ${escapeHtml(user.role || 'Игрок')}</p>
+              </div>
+              <div class="rank">${escapeHtml(user.rank || 'Новичок')}</div>
             </div>
-            <div class="rank">${escapeHtml(user.rank || 'Новичок')}</div>
+            <div class="player-footer">
+              <span>⭐ ${getReputationStars(user)}</span>
+              ${isInMyTeam ? 
+                '<span class="in-team-badge">👥 В вашей команде</span>' : 
+                `<button class="btn btn-secondary" onclick="sendInvite('${escapeHtml(user.username)}', '${escapeHtml(user.favoriteGame || 'игру')}')">Пригласить</button>`
+              }
+            </div>
           </div>
-          <div class="player-footer">
-            <span>⭐ ${getReputationStars(user)}</span>
-            <button class="btn btn-secondary" onclick="invitePlayer('${escapeHtml(user.username)}', '${escapeHtml(user.favoriteGame || 'игру')}')">Пригласить</button>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
+      
+      updateMyTeamDisplay();
     }
 
-    // Функция для получения звёзд репутации
+    function updateMyTeamDisplay() {
+      const myTeamCard = document.getElementById('myTeamCard');
+      const teamMembersDiv = document.getElementById('teamMembers');
+      
+      if (currentUser && teams[currentUser.id] && teams[currentUser.id].members.length > 1) {
+        myTeamCard.style.display = 'block';
+        const members = teams[currentUser.id].members
+          .map(memberId => users.find(u => u.id === memberId))
+          .filter(u => u);
+        
+        teamMembersDiv.innerHTML = members.map(member => `
+          <div class="team-member">
+            <div class="user-avatar" style="width: 32px; height: 32px; font-size: 14px;">${member.username.charAt(0).toUpperCase()}</div>
+            <span>${escapeHtml(member.username)}</span>
+            ${member.id === teams[currentUser.id].leader ? '<span style="font-size: 10px; color: #c4b5fd;">👑</span>' : ''}
+          </div>
+        `).join('');
+      } else {
+        myTeamCard.style.display = 'none';
+      }
+    }
+
+    function leaveTeam() {
+      if (!currentUser || !teams[currentUser.id]) return;
+      
+      const team = teams[currentUser.id];
+      const wasLeader = team.leader === currentUser.id;
+      
+      team.members = team.members.filter(id => id !== currentUser.id);
+      
+      if (team.members.length === 0) {
+        delete teams[currentUser.id];
+      } else {
+        teams[currentUser.id] = team;
+        if (wasLeader && team.members.length > 0) {
+          team.leader = team.members[0];
+          teams[team.leader] = team;
+        }
+      }
+      
+      delete teams[currentUser.id];
+      
+      saveData();
+      showToast('👋 Вы покинули команду');
+      renderPlayersList();
+      updateMyTeamDisplay();
+    }
+
+    function sendInvite(toUserName, game) {
+      if (!currentUser) {
+        showToast('🔐 Сначала войдите в аккаунт');
+        openLoginModal();
+        return;
+      }
+      
+      const toUser = users.find(u => u.username === toUserName);
+      if (!toUser) return;
+      
+      if (teams[currentUser.id] && teams[currentUser.id].members.includes(toUser.id)) {
+        showToast('⚠️ Этот игрок уже в вашей команде');
+        return;
+      }
+      
+      addNotification(toUser.id, {
+        title: '🎮 Приглашение в команду!',
+        message: `${currentUser.username} приглашает вас в команду для игры в ${game}`,
+        type: 'invite',
+        fromUser: currentUser.username,
+        game: game,
+        processed: false
+      });
+      
+      showToast(`✉️ Приглашение отправлено игроку ${toUserName}`);
+      
+      if (toUser.id !== currentUser.id) {
+        setTimeout(() => {
+          showToast(`📬 Уведомление: ${toUserName} получил приглашение`);
+        }, 500);
+      }
+    }
+
     function getReputationStars(user) {
       if (user.reputation) {
         return '★'.repeat(user.reputation) + '☆'.repeat(5 - user.reputation);
       }
-      // Случайная репутация для новых пользователей
-      const stars = Math.floor(Math.random() * 3) + 3; // 3-5 звёзд
+      const stars = Math.floor(Math.random() * 3) + 3;
       return '★'.repeat(stars) + '☆'.repeat(5 - stars);
     }
 
-    // Функция для экранирования HTML (безопасность)
     function escapeHtml(str) {
       if (!str) return '';
       return str
@@ -915,15 +1296,10 @@
       const toast = document.getElementById('toast');
       toast.textContent = message;
       toast.classList.add('show');
-      
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 2000);
+      setTimeout(() => toast.classList.remove('show'), 2000);
     }
 
-    function scrollToTop() {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
     function openLoginModal() {
       document.getElementById('loginModal').classList.add('active');
@@ -932,9 +1308,7 @@
       document.getElementById('loginPassword').value = '';
     }
 
-    function closeLoginModal() {
-      document.getElementById('loginModal').classList.remove('active');
-    }
+    function closeLoginModal() { document.getElementById('loginModal').classList.remove('active'); }
 
     function openRegisterModal() {
       document.getElementById('registerModal').classList.add('active');
@@ -947,9 +1321,7 @@
       document.getElementById('regRank').value = 'Новичок';
     }
 
-    function closeRegisterModal() {
-      document.getElementById('registerModal').classList.remove('active');
-    }
+    function closeRegisterModal() { document.getElementById('registerModal').classList.remove('active'); }
 
     function handleLogin() {
       const email = document.getElementById('loginEmail').value.trim();
@@ -970,6 +1342,7 @@
         updateUIForLoggedInUser();
         closeLoginModal();
         showToast(`👋 Добро пожаловать, ${user.username}!`);
+        renderPlayersList();
       } else {
         errorDiv.textContent = 'Неверный email/логин или пароль';
         errorDiv.style.display = 'block';
@@ -1028,9 +1401,11 @@
       };
 
       users.push(newUser);
-      localStorage.setItem('wellplayed_users', JSON.stringify(users));
-
-      // Обновляем список игроков
+      
+      // Создаём команду для нового пользователя (один в команде)
+      teams[newUser.id] = { leader: newUser.id, members: [newUser.id] };
+      
+      saveData();
       renderPlayersList();
 
       currentUser = newUser;
@@ -1056,6 +1431,7 @@
       localStorage.removeItem('wellplayed_currentUser');
       updateUIForLoggedInUser();
       showToast('👋 Вы вышли из аккаунта');
+      renderPlayersList();
     }
 
     function updateUIForLoggedInUser() {
@@ -1069,18 +1445,10 @@
         userInfo.style.display = 'flex';
         userName.textContent = currentUser.username;
         userAvatar.textContent = currentUser.username.charAt(0).toUpperCase();
+        updateNotificationBadge();
       } else {
         authButtons.style.display = 'flex';
         userInfo.style.display = 'none';
-      }
-    }
-
-    function invitePlayer(playerName, gameName) {
-      if (currentUser) {
-        showToast(`✉️ Приглашение отправлено игроку ${playerName} в ${gameName}!`);
-      } else {
-        showToast(`🔐 Чтобы пригласить ${playerName}, сначала войдите в аккаунт`);
-        openLoginModal();
       }
     }
 
@@ -1088,20 +1456,22 @@
       if (currentUser) {
         showToast(`🔍 Поиск тиммейтов для ${currentUser.username}...`);
       } else {
-        showToast('🔐 Сначала войдите в аккаунт, чтобы найти тиммейта');
+        showToast('🔐 Сначала войдите в аккаунт');
         openLoginModal();
       }
     }
 
-    // Закрытие модального окна при клике вне его
     window.onclick = function(event) {
       const loginModal = document.getElementById('loginModal');
       const registerModal = document.getElementById('registerModal');
+      const notifPanel = document.getElementById('notificationsPanel');
       if (event.target === loginModal) closeLoginModal();
       if (event.target === registerModal) closeRegisterModal();
+      if (!event.target.closest('.notification-badge') && !event.target.closest('.notifications-panel')) {
+        notifPanel.classList.remove('show');
+      }
     }
 
-    // При загрузке страницы обновляем UI и список игроков
     updateUIForLoggedInUser();
     renderPlayersList();
   </script>
