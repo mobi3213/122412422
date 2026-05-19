@@ -168,18 +168,6 @@
       border-color: #8b5cf6;
     }
 
-    .btn-success {
-      background: rgba(34,197,94,0.2);
-      border: 1px solid #22c55e;
-      color: #86efac;
-    }
-
-    .btn-danger {
-      background: rgba(239,68,68,0.2);
-      border: 1px solid #ef4444;
-      color: #fca5a5;
-    }
-
     .hero {
       min-height: 92vh;
       display: grid;
@@ -270,7 +258,7 @@
     }
 
     .players-list {
-      max-height: 500px;
+      max-height: 400px;
       overflow-y: auto;
       scrollbar-width: thin;
     }
@@ -352,6 +340,104 @@
       text-align: center;
       padding: 40px;
       color: rgba(255,255,255,0.5);
+    }
+
+    /* Чат */
+    .chat-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 34px;
+      padding: 28px;
+      backdrop-filter: blur(20px);
+      margin-top: 30px;
+    }
+
+    .chat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .chat-header h3 {
+      font-size: 24px;
+      color: #c4b5fd;
+    }
+
+    .chat-messages {
+      height: 300px;
+      overflow-y: auto;
+      margin-bottom: 20px;
+      padding: 10px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 20px;
+    }
+
+    .chat-message {
+      margin-bottom: 15px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-message.sent {
+      align-items: flex-end;
+    }
+
+    .chat-message.received {
+      align-items: flex-start;
+    }
+
+    .message-bubble {
+      max-width: 80%;
+      padding: 10px 16px;
+      border-radius: 20px;
+      word-wrap: break-word;
+    }
+
+    .chat-message.sent .message-bubble {
+      background: linear-gradient(135deg, #8b5cf6, #22d3ee);
+      border-bottom-right-radius: 5px;
+    }
+
+    .chat-message.received .message-bubble {
+      background: rgba(255,255,255,0.1);
+      border-bottom-left-radius: 5px;
+    }
+
+    .message-sender {
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 4px;
+      margin-left: 12px;
+    }
+
+    .chat-input-area {
+      display: flex;
+      gap: 12px;
+    }
+
+    .chat-input {
+      flex: 1;
+      padding: 14px 18px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: white;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+    }
+
+    .chat-input:focus {
+      outline: none;
+      border-color: #8b5cf6;
+    }
+
+    .no-team-chat {
+      text-align: center;
+      padding: 60px;
+      color: rgba(255,255,255,0.4);
     }
 
     .features {
@@ -684,6 +770,9 @@
         width: 100%;
         justify-content: center;
       }
+      .chat-input-area {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
@@ -839,15 +928,33 @@
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-top">
-        <div>
-          <h2 style="font-size: 32px; margin-bottom: 8px;">Поиск команды</h2>
-          <p style="color: rgba(255,255,255,0.5);">Наши игроки</p>
+    <div>
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <h2 style="font-size: 32px; margin-bottom: 8px;">Поиск команды</h2>
+            <p style="color: rgba(255,255,255,0.5);">Наши игроки</p>
+          </div>
+          <div class="online" id="onlineCount">online</div>
         </div>
-        <div class="online" id="onlineCount">online</div>
+        <div class="players-list" id="playersList"></div>
       </div>
-      <div class="players-list" id="playersList"></div>
+
+      <!-- Чат команды -->
+      <div class="chat-card" id="chatCard" style="display: none;">
+        <div class="chat-header">
+          <h3>💬 Командный чат</h3>
+          <span style="font-size: 12px; color: rgba(255,255,255,0.5);">Сообщения видны всей команде</span>
+        </div>
+        <div id="chatMessages" class="chat-messages">
+          <div class="no-team-chat">👋 Присоединитесь к команде, чтобы начать общение</div>
+        </div>
+        <div class="chat-input-area">
+          <input type="text" id="chatInput" class="chat-input" placeholder="Напишите сообщение..." onkeypress="if(event.key==='
+')sendMessage()">
+          <button class="btn btn-primary" onclick="sendMessage()">Отправить</button>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -900,7 +1007,7 @@
   </footer>
 
   <script>
-    // ===== ВАША КОНФИГУРАЦИЯ FIREBASE (УЖЕ ВСТАВЛЕНА) =====
+    // ===== КОНФИГУРАЦИЯ FIREBASE =====
     const firebaseConfig = {
       apiKey: "AIzaSyDBAZ2887ekcEGUcb9gTh2mwRLkrYDLqUE",
       authDomain: "well-played-app.firebaseapp.com",
@@ -911,12 +1018,13 @@
       appId: "1:926709321013:web:b90a53e2a4e0e9a228507c"
     };
 
-    // Инициализация Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const database = firebase.database();
 
     let currentUser = null;
+    let currentTeamId = null;
+    let chatListener = null;
 
     function showToast(message) {
       const toast = document.getElementById('toast');
@@ -1025,10 +1133,114 @@
     }
 
     async function logout() {
+      if (chatListener) {
+        chatListener.off();
+        chatListener = null;
+      }
       await auth.signOut();
       showToast('👋 Вы вышли из аккаунта');
     }
 
+    // === ЧАТ ===
+    async function setupChat() {
+      const chatCard = document.getElementById('chatCard');
+      
+      if (!currentUser) {
+        chatCard.style.display = 'none';
+        return;
+      }
+      
+      const teamSnapshot = await database.ref('teams/' + currentUser.uid).once('value');
+      const team = teamSnapshot.val();
+      
+      if (team && team.members && team.members.length > 1) {
+        currentTeamId = team.leader;
+        chatCard.style.display = 'block';
+        
+        // Загружаем сообщения
+        loadChatMessages();
+        
+        // Слушаем новые сообщения
+        if (chatListener) chatListener.off();
+        chatListener = database.ref('chats/' + currentTeamId).on('child_added', (snapshot) => {
+          const message = snapshot.val();
+          addMessageToChat(message, false);
+        });
+      } else {
+        chatCard.style.display = 'none';
+        currentTeamId = null;
+        if (chatListener) {
+          chatListener.off();
+          chatListener = null;
+        }
+      }
+    }
+
+    async function loadChatMessages() {
+      const messagesContainer = document.getElementById('chatMessages');
+      if (!currentTeamId) return;
+      
+      const snapshot = await database.ref('chats/' + currentTeamId).once('value');
+      const messages = snapshot.val();
+      
+      if (!messages) {
+        messagesContainer.innerHTML = '<div class="no-team-chat">💬 Напишите первое сообщение!</div>';
+        return;
+      }
+      
+      const messagesList = Object.entries(messages).map(([id, data]) => data).sort((a,b) => a.timestamp - b.timestamp);
+      
+      messagesContainer.innerHTML = '';
+      messagesList.forEach(msg => {
+        addMessageToChat(msg, true);
+      });
+    }
+
+    function addMessageToChat(message, isExisting) {
+      const messagesContainer = document.getElementById('chatMessages');
+      
+      // Убираем заглушку если есть
+      if (messagesContainer.querySelector('.no-team-chat')) {
+        messagesContainer.innerHTML = '';
+      }
+      
+      const isCurrentUser = currentUser && message.userId === currentUser.uid;
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `chat-message ${isCurrentUser ? 'sent' : 'received'}`;
+      
+      messageDiv.innerHTML = `
+        <div class="message-sender">${!isCurrentUser ? escapeHtml(message.userName) : 'Вы'}</div>
+        <div class="message-bubble">${escapeHtml(message.text)}</div>
+      `;
+      
+      messagesContainer.appendChild(messageDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      
+      if (!text) return;
+      if (!currentTeamId) {
+        showToast('Вы не в команде!');
+        return;
+      }
+      
+      const userSnapshot = await database.ref('users/' + currentUser.uid).once('value');
+      const userData = userSnapshot.val();
+      
+      await database.ref('chats/' + currentTeamId).push({
+        userId: currentUser.uid,
+        userName: userData.username,
+        text: text,
+        timestamp: Date.now()
+      });
+      
+      input.value = '';
+    }
+
+    // === ОСТАЛЬНЫЕ ФУНКЦИИ ===
     async function renderPlayersList() {
       const playersList = document.getElementById('playersList');
       const totalUsersSpan = document.getElementById('totalUsers');
@@ -1138,6 +1350,7 @@
             showToast(`✅ Вы присоединились к команде ${invite.fromUserName}!`);
             renderPlayersList();
             updateMyTeamDisplay();
+            setupChat();
           } else {
             await database.ref('invites/' + currentUser.uid + '/' + snapshot.key).update({ status: 'declined' });
             showToast(`❌ Вы отклонили приглашение`);
@@ -1190,6 +1403,9 @@
         const newMembers = team.members.filter(id => id !== currentUser.uid);
         if (newMembers.length === 0) {
           await database.ref('teams/' + currentUser.uid).remove();
+          if (team.leader !== currentUser.uid) {
+            await database.ref('teams/' + team.leader).remove();
+          }
         } else {
           const newLeader = newMembers[0];
           for (const memberId of newMembers) {
@@ -1200,6 +1416,7 @@
         showToast('👋 Вы покинули команду');
         renderPlayersList();
         updateMyTeamDisplay();
+        setupChat();
       }
     }
 
@@ -1229,18 +1446,18 @@
       }
     }
 
-    // Слушаем изменения состояния авторизации
     auth.onAuthStateChanged(async (user) => {
       currentUser = user;
       updateUIForLoggedInUser(user);
       if (user) {
         await renderPlayersList();
         listenForInvites();
-        updateMyTeamDisplay();
+        await updateMyTeamDisplay();
+        await setupChat();
       } else {
         await renderPlayersList();
-        const myTeamCard = document.getElementById('myTeamCard');
-        if (myTeamCard) myTeamCard.style.display = 'none';
+        document.getElementById('myTeamCard').style.display = 'none';
+        document.getElementById('chatCard').style.display = 'none';
       }
     });
 
