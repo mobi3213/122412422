@@ -124,6 +124,9 @@
 
     nav a:hover {
       color: white;
+      background: linear-gradient(135deg, #8b5cf6, #22d3ee);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .btn {
@@ -308,22 +311,6 @@
     .status-offline {
       background: rgba(107,114,128,0.15);
       color: #9ca3af;
-    }
-
-    .online-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      display: inline-block;
-    }
-
-    .dot-green {
-      background: #22c55e;
-      box-shadow: 0 0 5px #22c55e;
-    }
-
-    .dot-gray {
-      background: #6b7280;
     }
 
     .online {
@@ -944,10 +931,10 @@
 
       <nav>
         <ul>
-          <li><a onclick="showToast('🎮 Игры — в разработке')">Игры</a></li>
-          <li><a onclick="showToast('👥 Команды — скоро')">Команды</a></li>
-          <li><a onclick="showToast('🏆 Рейтинг — скоро')">Рейтинг</a></li>
-          <li><a onclick="showToast('💬 Сообщество — скоро')">Сообщество</a></li>
+          <li><a href="games.html">Игры</a></li>
+          <li><a href="teams.html">Команды</a></li>
+          <li><a href="rating.html">Рейтинг</a></li>
+          <li><a href="community.html">Сообщество</a></li>
         </ul>
       </nav>
 
@@ -1018,7 +1005,7 @@
           <div class="online" id="onlineCount">online</div>
         </div>
 
-        <!-- ФИЛЬТР ПО ИГРАМ И СТАТУСУ -->
+        <!-- ФИЛЬТР ПО ИГРАМ -->
         <div class="filter-section">
           <div class="filter-title">🎮 Фильтр по игре:</div>
           <div class="filter-buttons" id="filterButtons">
@@ -1031,6 +1018,7 @@
           </div>
         </div>
 
+        <!-- ФИЛЬТР ПО СТАТУСУ -->
         <div class="filter-section">
           <div class="filter-title">🟢 Статус:</div>
           <div class="filter-buttons" id="statusFilterButtons">
@@ -1128,7 +1116,6 @@
     let chatListener = null;
     let currentGameFilter = "all";
     let currentStatusFilter = "all";
-    let onlineStatusListener = null;
 
     function showToast(message) {
       const toast = document.getElementById('toast');
@@ -1155,7 +1142,6 @@
 
     function closeRegisterModal() { document.getElementById('registerModal').classList.remove('active'); }
 
-    // Установка фильтра по игре
     function setGameFilter(game) {
       currentGameFilter = game;
       document.querySelectorAll('#filterButtons .filter-btn').forEach(btn => {
@@ -1168,7 +1154,6 @@
       renderPlayersList();
     }
 
-    // Установка фильтра по статусу
     function setStatusFilter(status) {
       currentStatusFilter = status;
       document.querySelectorAll('#statusFilterButtons .filter-btn').forEach(btn => {
@@ -1181,7 +1166,6 @@
       renderPlayersList();
     }
 
-    // Обновление онлайн-статуса пользователя
     async function updateUserStatus(userId, isOnline) {
       if (!userId) return;
       await database.ref('status/' + userId).set({
@@ -1190,19 +1174,12 @@
       });
     }
 
-    // Установка слушателя для онлайн-статуса
     function setupOnlineStatus() {
       if (!currentUser) return;
-      
-      // Устанавливаем статус "онлайн"
       updateUserStatus(currentUser.uid, true);
-      
-      // При закрытии страницы - статус "оффлайн"
       window.addEventListener('beforeunload', () => {
         updateUserStatus(currentUser.uid, false);
       });
-      
-      // Периодически обновляем статус (каждые 30 секунд)
       setInterval(() => {
         if (currentUser) {
           updateUserStatus(currentUser.uid, true);
@@ -1210,13 +1187,10 @@
       }, 30000);
     }
 
-    // Получение статуса пользователя
     async function getUserStatus(userId) {
       const snapshot = await database.ref('status/' + userId).once('value');
       const status = snapshot.val();
       if (!status) return { online: false, lastSeen: null };
-      
-      // Если последнее обновление было больше 2 минут назад, считаем оффлайн
       const twoMinutesAgo = Date.now() - 120000;
       if (status.lastSeen && status.lastSeen < twoMinutesAgo) {
         return { online: false, lastSeen: status.lastSeen };
@@ -1236,7 +1210,7 @@
       }
 
       try {
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        await auth.signInWithEmailAndPassword(email, password);
         closeLoginModal();
         showToast('👋 Добро пожаловать!');
         setupOnlineStatus();
@@ -1321,7 +1295,6 @@
       showToast('👋 Вы вышли из аккаунта');
     }
 
-    // === ЧАТ ===
     async function setupChat() {
       const chatCard = document.getElementById('chatCard');
       
@@ -1416,7 +1389,6 @@
       input.value = '';
     }
 
-    // === ОТОБРАЖЕНИЕ СПИСКА ИГРОКОВ С ФИЛЬТРАМИ ===
     async function renderPlayersList() {
       const playersList = document.getElementById('playersList');
       const totalUsersSpan = document.getElementById('totalUsers');
@@ -1430,7 +1402,6 @@
         
         totalUsersSpan.textContent = allUsers.length;
         
-        // Получаем статусы всех пользователей
         const usersWithStatus = await Promise.all(allUsers.map(async (user) => {
           const status = await getUserStatus(user.id);
           return { ...user, online: status.online };
@@ -1440,13 +1411,10 @@
         onlineUsersCountSpan.textContent = onlineCount;
         onlineCountSpan.textContent = `${onlineCount} онлайн`;
         
-        // Применяем фильтр по игре
         let filteredUsers = usersWithStatus;
         if (currentGameFilter !== "all") {
           filteredUsers = filteredUsers.filter(user => user.favoriteGame === currentGameFilter);
         }
-        
-        // Применяем фильтр по статусу
         if (currentStatusFilter === "online") {
           filteredUsers = filteredUsers.filter(user => user.online === true);
         }
@@ -1655,7 +1623,6 @@
       }
     }
 
-    // Назначаем обработчики
     function initFilters() {
       document.querySelectorAll('#filterButtons .filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1669,7 +1636,6 @@
       });
     }
 
-    // Слушаем изменения статусов в реальном времени
     function listenStatusChanges() {
       database.ref('status').on('child_changed', () => {
         renderPlayersList();
