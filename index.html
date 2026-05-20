@@ -291,6 +291,41 @@
       border-color: transparent;
     }
 
+    .online-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    .status-online {
+      background: rgba(34,197,94,0.15);
+      color: #86efac;
+    }
+
+    .status-offline {
+      background: rgba(107,114,128,0.15);
+      color: #9ca3af;
+    }
+
+    .online-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .dot-green {
+      background: #22c55e;
+      box-shadow: 0 0 5px #22c55e;
+    }
+
+    .dot-gray {
+      background: #6b7280;
+    }
+
     .online {
       background: rgba(34,197,94,0.15);
       color: #86efac;
@@ -900,7 +935,7 @@
   <header>
     <div class="container nav">
       <div class="logo" onclick="scrollToTop()">
-        <img src="logo.png" alt="Well Played" class="logo-image">
+        <img src="logo.png" alt="Well Played" class="logo-image" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%238b5cf6%22/><text x=%2250%22 y=%2272%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22 font-weight=%22bold%22>WP</text></svg>'">
         <div>
           <h1>well played</h1>
           <p>find your perfect teammates</p>
@@ -955,8 +990,8 @@
           <span>Пользователей</span>
         </div>
         <div>
-          <h3>500+</h3>
-          <span>Игровых сессий</span>
+          <h3 id="onlineUsersCount">0</h3>
+          <span>В сети</span>
         </div>
         <div>
           <h3>4.9</h3>
@@ -983,7 +1018,7 @@
           <div class="online" id="onlineCount">online</div>
         </div>
 
-        <!-- ФИЛЬТР ПО ИГРАМ -->
+        <!-- ФИЛЬТР ПО ИГРАМ И СТАТУСУ -->
         <div class="filter-section">
           <div class="filter-title">🎮 Фильтр по игре:</div>
           <div class="filter-buttons" id="filterButtons">
@@ -993,6 +1028,14 @@
             <button class="filter-btn" data-game="Valorant">Valorant</button>
             <button class="filter-btn" data-game="League of Legends">LoL</button>
             <button class="filter-btn" data-game="PUBG">PUBG</button>
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <div class="filter-title">🟢 Статус:</div>
+          <div class="filter-buttons" id="statusFilterButtons">
+            <button class="filter-btn active" data-status="all">Все</button>
+            <button class="filter-btn" data-status="online">Только онлайн 🟢</button>
           </div>
         </div>
 
@@ -1083,8 +1126,9 @@
     let currentUser = null;
     let currentTeamId = null;
     let chatListener = null;
-    let currentFilter = "all"; // Текущий выбранный фильтр
-    let allUsers = []; // Храним всех пользователей
+    let currentGameFilter = "all";
+    let currentStatusFilter = "all";
+    let onlineStatusListener = null;
 
     function showToast(message) {
       const toast = document.getElementById('toast');
@@ -1111,11 +1155,10 @@
 
     function closeRegisterModal() { document.getElementById('registerModal').classList.remove('active'); }
 
-    // Установка фильтра
-    function setFilter(game) {
-      currentFilter = game;
-      // Обновляем активную кнопку
-      document.querySelectorAll('.filter-btn').forEach(btn => {
+    // Установка фильтра по игре
+    function setGameFilter(game) {
+      currentGameFilter = game;
+      document.querySelectorAll('#filterButtons .filter-btn').forEach(btn => {
         if (btn.dataset.game === game) {
           btn.classList.add('active');
         } else {
@@ -1123,6 +1166,62 @@
         }
       });
       renderPlayersList();
+    }
+
+    // Установка фильтра по статусу
+    function setStatusFilter(status) {
+      currentStatusFilter = status;
+      document.querySelectorAll('#statusFilterButtons .filter-btn').forEach(btn => {
+        if (btn.dataset.status === status) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+      renderPlayersList();
+    }
+
+    // Обновление онлайн-статуса пользователя
+    async function updateUserStatus(userId, isOnline) {
+      if (!userId) return;
+      await database.ref('status/' + userId).set({
+        online: isOnline,
+        lastSeen: firebase.database.ServerValue.TIMESTAMP
+      });
+    }
+
+    // Установка слушателя для онлайн-статуса
+    function setupOnlineStatus() {
+      if (!currentUser) return;
+      
+      // Устанавливаем статус "онлайн"
+      updateUserStatus(currentUser.uid, true);
+      
+      // При закрытии страницы - статус "оффлайн"
+      window.addEventListener('beforeunload', () => {
+        updateUserStatus(currentUser.uid, false);
+      });
+      
+      // Периодически обновляем статус (каждые 30 секунд)
+      setInterval(() => {
+        if (currentUser) {
+          updateUserStatus(currentUser.uid, true);
+        }
+      }, 30000);
+    }
+
+    // Получение статуса пользователя
+    async function getUserStatus(userId) {
+      const snapshot = await database.ref('status/' + userId).once('value');
+      const status = snapshot.val();
+      if (!status) return { online: false, lastSeen: null };
+      
+      // Если последнее обновление было больше 2 минут назад, считаем оффлайн
+      const twoMinutesAgo = Date.now() - 120000;
+      if (status.lastSeen && status.lastSeen < twoMinutesAgo) {
+        return { online: false, lastSeen: status.lastSeen };
+      }
+      return { online: status.online || false, lastSeen: status.lastSeen };
     }
 
     async function handleLogin() {
@@ -1137,9 +1236,10 @@
       }
 
       try {
-        await auth.signInWithEmailAndPassword(email, password);
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
         closeLoginModal();
         showToast('👋 Добро пожаловать!');
+        setupOnlineStatus();
       } catch (error) {
         errorDiv.textContent = 'Неверный email или пароль';
         errorDiv.style.display = 'block';
@@ -1198,6 +1298,7 @@
         
         closeRegisterModal();
         showToast(`✅ Добро пожаловать, ${username}!`);
+        setupOnlineStatus();
       } catch (error) {
         if (error.code === 'auth/email-already-in-use') {
           errorDiv.textContent = 'Пользователь с таким email уже существует';
@@ -1212,6 +1313,9 @@
       if (chatListener) {
         chatListener.off();
         chatListener = null;
+      }
+      if (currentUser) {
+        await updateUserStatus(currentUser.uid, false);
       }
       await auth.signOut();
       showToast('👋 Вы вышли из аккаунта');
@@ -1312,31 +1416,52 @@
       input.value = '';
     }
 
-    // === ОТОБРАЖЕНИЕ СПИСКА ИГРОКОВ С ФИЛЬТРОМ ===
+    // === ОТОБРАЖЕНИЕ СПИСКА ИГРОКОВ С ФИЛЬТРАМИ ===
     async function renderPlayersList() {
       const playersList = document.getElementById('playersList');
       const totalUsersSpan = document.getElementById('totalUsers');
+      const onlineUsersCountSpan = document.getElementById('onlineUsersCount');
       const onlineCountSpan = document.getElementById('onlineCount');
       
       try {
         const snapshot = await database.ref('users').once('value');
         const users = snapshot.val();
-        allUsers = users ? Object.entries(users).map(([id, data]) => ({ id, ...data })) : [];
+        let allUsers = users ? Object.entries(users).map(([id, data]) => ({ id, ...data })) : [];
         
         totalUsersSpan.textContent = allUsers.length;
         
-        // Применяем фильтр
-        let filteredUsers = allUsers;
-        if (currentFilter !== "all") {
-          filteredUsers = allUsers.filter(user => user.favoriteGame === currentFilter);
+        // Получаем статусы всех пользователей
+        const usersWithStatus = await Promise.all(allUsers.map(async (user) => {
+          const status = await getUserStatus(user.id);
+          return { ...user, online: status.online };
+        }));
+        
+        const onlineCount = usersWithStatus.filter(u => u.online).length;
+        onlineUsersCountSpan.textContent = onlineCount;
+        onlineCountSpan.textContent = `${onlineCount} онлайн`;
+        
+        // Применяем фильтр по игре
+        let filteredUsers = usersWithStatus;
+        if (currentGameFilter !== "all") {
+          filteredUsers = filteredUsers.filter(user => user.favoriteGame === currentGameFilter);
         }
         
-        onlineCountSpan.textContent = `${filteredUsers.length} онлайн`;
+        // Применяем фильтр по статусу
+        if (currentStatusFilter === "online") {
+          filteredUsers = filteredUsers.filter(user => user.online === true);
+        }
         
         if (filteredUsers.length === 0) {
-          let message = currentFilter === "all" 
-            ? "😢 Пока нет зарегистрированных пользователей"
-            : `😢 Нет игроков, играющих в ${currentFilter}`;
+          let message = "😢 Нет пользователей";
+          if (currentGameFilter !== "all" && currentStatusFilter === "online") {
+            message = `😢 Нет онлайн-игроков в ${currentGameFilter}`;
+          } else if (currentGameFilter !== "all") {
+            message = `😢 Нет игроков, играющих в ${currentGameFilter}`;
+          } else if (currentStatusFilter === "online") {
+            message = "😢 Нет онлайн-игроков";
+          } else {
+            message = "😢 Пока нет зарегистрированных пользователей";
+          }
           playersList.innerHTML = `<div class="empty-players">${message}<br><button class="btn btn-primary" style="margin-top: 16px;" onclick="openRegisterModal()">Стать первым!</button></div>`;
           return;
         }
@@ -1353,6 +1478,8 @@
         playersList.innerHTML = filteredUsers.map(user => {
           if (currentUserId && user.id === currentUserId) return '';
           const isInTeam = teamMembers.includes(user.id);
+          const statusClass = user.online ? 'status-online' : 'status-offline';
+          const statusText = user.online ? '🟢 В сети' : '🔴 Оффлайн';
           return `
             <div class="player-card">
               <div class="player-head">
@@ -1363,7 +1490,10 @@
                 <div class="rank">${escapeHtml(user.rank || 'Новичок')}</div>
               </div>
               <div class="player-footer">
-                <span>⭐ ${getReputationStars(user.reputation)}</span>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                  <span>⭐ ${getReputationStars(user.reputation)}</span>
+                  <span class="online-status ${statusClass}">${statusText}</span>
+                </div>
                 ${isInTeam ? '<span class="in-team-badge">👥 В вашей команде</span>' : `<button class="btn btn-secondary" onclick="sendInvite('${user.id}', '${escapeHtml(user.username)}')">Пригласить</button>`}
               </div>
             </div>
@@ -1525,12 +1655,27 @@
       }
     }
 
-    // Назначаем обработчики на кнопки фильтра
+    // Назначаем обработчики
     function initFilters() {
-      document.querySelectorAll('.filter-btn').forEach(btn => {
+      document.querySelectorAll('#filterButtons .filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          setFilter(btn.dataset.game);
+          setGameFilter(btn.dataset.game);
         });
+      });
+      document.querySelectorAll('#statusFilterButtons .filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          setStatusFilter(btn.dataset.status);
+        });
+      });
+    }
+
+    // Слушаем изменения статусов в реальном времени
+    function listenStatusChanges() {
+      database.ref('status').on('child_changed', () => {
+        renderPlayersList();
+      });
+      database.ref('status').on('child_added', () => {
+        renderPlayersList();
       });
     }
 
@@ -1542,6 +1687,8 @@
         listenForInvites();
         await updateMyTeamDisplay();
         await setupChat();
+        setupOnlineStatus();
+        listenStatusChanges();
       } else {
         await renderPlayersList();
         document.getElementById('myTeamCard').style.display = 'none';
