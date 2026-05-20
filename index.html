@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Well Played — найди тиммейтов для любых игр</title>
+  
+  <!-- FAVICON для вкладки браузера (иконка с эмодзи) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='85'>🎮</text></svg>">
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -81,6 +85,15 @@
       cursor: pointer;
     }
 
+    /* Стиль для картинки-логотипа */
+    .logo-image {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    /* Если хотите использовать градиентный фон вместо картинки */
     .logo-icon {
       width: 48px;
       height: 48px;
@@ -854,8 +867,11 @@
 
   <header>
     <div class="container nav">
+      <!-- ЛОГОТИП НА САЙТЕ (слева сверху) - теперь с картинкой вместо WP -->
       <div class="logo" onclick="scrollToTop()">
-        <div class="logo-icon">WP</div>
+        <!-- ВСТАВЬТЕ ВАШУ ИКОНКУ ВМЕСТО ЭТОЙ (замените logo.png на ваш файл) -->
+        <img src="logo.png" alt="Well Played" class="logo-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div class="logo-icon" style="display: none;">WP</div>
         <div>
           <h1>well played</h1>
           <p>find your perfect teammates</p>
@@ -950,8 +966,7 @@
           <div class="no-team-chat">👋 Присоединитесь к команде, чтобы начать общение</div>
         </div>
         <div class="chat-input-area">
-          <input type="text" id="chatInput" class="chat-input" placeholder="Напишите сообщение..." onkeypress="if(event.key==='
-')sendMessage()">
+          <input type="text" id="chatInput" class="chat-input" placeholder="Напишите сообщение..." onkeypress="if(event.key=='Enter')sendMessage()">
           <button class="btn btn-primary" onclick="sendMessage()">Отправить</button>
         </div>
       </div>
@@ -1061,414 +1076,4 @@
       }
 
       try {
-        await auth.signInWithEmailAndPassword(email, password);
-        closeLoginModal();
-        showToast('👋 Добро пожаловать!');
-      } catch (error) {
-        errorDiv.textContent = 'Неверный email или пароль';
-        errorDiv.style.display = 'block';
-      }
-    }
-
-    async function handleRegister() {
-      const username = document.getElementById('regUsername').value.trim();
-      const email = document.getElementById('regEmail').value.trim();
-      const password = document.getElementById('regPassword').value;
-      const confirmPassword = document.getElementById('regConfirmPassword').value;
-      const favoriteGame = document.getElementById('regGame').value;
-      const rank = document.getElementById('regRank').value;
-      const errorDiv = document.getElementById('registerError');
-
-      if (!username || !email || !password || !confirmPassword) {
-        errorDiv.textContent = 'Заполните все поля';
-        errorDiv.style.display = 'block';
-        return;
-      }
-
-      if (password.length < 6) {
-        errorDiv.textContent = 'Пароль должен быть не менее 6 символов';
-        errorDiv.style.display = 'block';
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        errorDiv.textContent = 'Пароли не совпадают';
-        errorDiv.style.display = 'block';
-        return;
-      }
-
-      try {
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        
-        const roles = {
-          'CS2': 'Entry Fragger',
-          'Dota 2': 'Support',
-          'Valorant': 'Duelist',
-          'League of Legends': 'Mid Laner',
-          'PUBG': 'Sniper'
-        };
-        
-        await database.ref('users/' + userCredential.user.uid).set({
-          username: username,
-          email: email,
-          favoriteGame: favoriteGame,
-          rank: rank,
-          role: roles[favoriteGame] || 'Игрок',
-          reputation: 4,
-          registeredAt: new Date().toLocaleString()
-        });
-        
-        await userCredential.user.updateProfile({ displayName: username });
-        
-        closeRegisterModal();
-        showToast(`✅ Добро пожаловать, ${username}!`);
-      } catch (error) {
-        if (error.code === 'auth/email-already-in-use') {
-          errorDiv.textContent = 'Пользователь с таким email уже существует';
-        } else {
-          errorDiv.textContent = error.message;
-        }
-        errorDiv.style.display = 'block';
-      }
-    }
-
-    async function logout() {
-      if (chatListener) {
-        chatListener.off();
-        chatListener = null;
-      }
-      await auth.signOut();
-      showToast('👋 Вы вышли из аккаунта');
-    }
-
-    // === ЧАТ ===
-    async function setupChat() {
-      const chatCard = document.getElementById('chatCard');
-      
-      if (!currentUser) {
-        chatCard.style.display = 'none';
-        return;
-      }
-      
-      const teamSnapshot = await database.ref('teams/' + currentUser.uid).once('value');
-      const team = teamSnapshot.val();
-      
-      if (team && team.members && team.members.length > 1) {
-        currentTeamId = team.leader;
-        chatCard.style.display = 'block';
-        
-        // Загружаем сообщения
-        loadChatMessages();
-        
-        // Слушаем новые сообщения
-        if (chatListener) chatListener.off();
-        chatListener = database.ref('chats/' + currentTeamId).on('child_added', (snapshot) => {
-          const message = snapshot.val();
-          addMessageToChat(message, false);
-        });
-      } else {
-        chatCard.style.display = 'none';
-        currentTeamId = null;
-        if (chatListener) {
-          chatListener.off();
-          chatListener = null;
-        }
-      }
-    }
-
-    async function loadChatMessages() {
-      const messagesContainer = document.getElementById('chatMessages');
-      if (!currentTeamId) return;
-      
-      const snapshot = await database.ref('chats/' + currentTeamId).once('value');
-      const messages = snapshot.val();
-      
-      if (!messages) {
-        messagesContainer.innerHTML = '<div class="no-team-chat">💬 Напишите первое сообщение!</div>';
-        return;
-      }
-      
-      const messagesList = Object.entries(messages).map(([id, data]) => data).sort((a,b) => a.timestamp - b.timestamp);
-      
-      messagesContainer.innerHTML = '';
-      messagesList.forEach(msg => {
-        addMessageToChat(msg, true);
-      });
-    }
-
-    function addMessageToChat(message, isExisting) {
-      const messagesContainer = document.getElementById('chatMessages');
-      
-      // Убираем заглушку если есть
-      if (messagesContainer.querySelector('.no-team-chat')) {
-        messagesContainer.innerHTML = '';
-      }
-      
-      const isCurrentUser = currentUser && message.userId === currentUser.uid;
-      const messageDiv = document.createElement('div');
-      messageDiv.className = `chat-message ${isCurrentUser ? 'sent' : 'received'}`;
-      
-      messageDiv.innerHTML = `
-        <div class="message-sender">${!isCurrentUser ? escapeHtml(message.userName) : 'Вы'}</div>
-        <div class="message-bubble">${escapeHtml(message.text)}</div>
-      `;
-      
-      messagesContainer.appendChild(messageDiv);
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-
-    async function sendMessage() {
-      const input = document.getElementById('chatInput');
-      const text = input.value.trim();
-      
-      if (!text) return;
-      if (!currentTeamId) {
-        showToast('Вы не в команде!');
-        return;
-      }
-      
-      const userSnapshot = await database.ref('users/' + currentUser.uid).once('value');
-      const userData = userSnapshot.val();
-      
-      await database.ref('chats/' + currentTeamId).push({
-        userId: currentUser.uid,
-        userName: userData.username,
-        text: text,
-        timestamp: Date.now()
-      });
-      
-      input.value = '';
-    }
-
-    // === ОСТАЛЬНЫЕ ФУНКЦИИ ===
-    async function renderPlayersList() {
-      const playersList = document.getElementById('playersList');
-      const totalUsersSpan = document.getElementById('totalUsers');
-      const onlineCountSpan = document.getElementById('onlineCount');
-      
-      try {
-        const snapshot = await database.ref('users').once('value');
-        const users = snapshot.val();
-        const userList = users ? Object.entries(users).map(([id, data]) => ({ id, ...data })) : [];
-        
-        totalUsersSpan.textContent = userList.length;
-        onlineCountSpan.textContent = `${userList.length} онлайн`;
-        
-        if (userList.length === 0) {
-          playersList.innerHTML = `<div class="empty-players">😢 Пока нет зарегистрированных пользователей<br><button class="btn btn-primary" style="margin-top: 16px;" onclick="openRegisterModal()">Стать первым!</button></div>`;
-          return;
-        }
-        
-        const currentUserId = currentUser ? currentUser.uid : null;
-        
-        let teamMembers = [];
-        if (currentUserId) {
-          const teamSnapshot = await database.ref('teams/' + currentUserId).once('value');
-          const team = teamSnapshot.val();
-          if (team && team.members) teamMembers = team.members;
-        }
-        
-        playersList.innerHTML = userList.map(user => {
-          if (currentUserId && user.id === currentUserId) return '';
-          const isInTeam = teamMembers.includes(user.id);
-          return `
-            <div class="player-card">
-              <div class="player-head">
-                <div>
-                  <h4>${escapeHtml(user.username)}</h4>
-                  <p>${escapeHtml(user.favoriteGame || 'Не указана')} • ${escapeHtml(user.role || 'Игрок')}</p>
-                </div>
-                <div class="rank">${escapeHtml(user.rank || 'Новичок')}</div>
-              </div>
-              <div class="player-footer">
-                <span>⭐ ${getReputationStars(user.reputation)}</span>
-                ${isInTeam ? '<span class="in-team-badge">👥 В вашей команде</span>' : `<button class="btn btn-secondary" onclick="sendInvite('${user.id}', '${escapeHtml(user.username)}')">Пригласить</button>`}
-              </div>
-            </div>
-          `;
-        }).join('');
-        
-      } catch (error) {
-        console.error(error);
-        playersList.innerHTML = '<div class="empty-players">⚠️ Ошибка загрузки данных</div>';
-      }
-    }
-
-    function getReputationStars(reputation) {
-      const stars = reputation || Math.floor(Math.random() * 3) + 3;
-      return '★'.repeat(stars) + '☆'.repeat(5 - stars);
-    }
-
-    function escapeHtml(str) {
-      if (!str) return '';
-      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    }
-
-    async function sendInvite(toUserId, toUserName) {
-      if (!currentUser) {
-        showToast('🔐 Сначала войдите в аккаунт');
-        openLoginModal();
-        return;
-      }
-      
-      const fromSnapshot = await database.ref('users/' + currentUser.uid).once('value');
-      const fromData = fromSnapshot.val();
-      
-      await database.ref('invites/' + toUserId).push({
-        fromUserId: currentUser.uid,
-        fromUserName: fromData.username,
-        toUserId: toUserId,
-        game: fromData.favoriteGame || 'игру',
-        timestamp: Date.now(),
-        status: 'pending'
-      });
-      
-      showToast(`✉️ Приглашение отправлено ${toUserName}`);
-    }
-
-    function listenForInvites() {
-      if (!currentUser) return;
-      
-      database.ref('invites/' + currentUser.uid).on('child_added', async (snapshot) => {
-        const invite = snapshot.val();
-        if (invite.status === 'pending') {
-          const result = confirm(`${invite.fromUserName} приглашает вас в команду для игры в ${invite.game}!\n\nПринять приглашение?`);
-          
-          if (result) {
-            await database.ref('invites/' + currentUser.uid + '/' + snapshot.key).update({ status: 'accepted' });
-            
-            const teamRef = database.ref('teams/' + invite.fromUserId);
-            const teamSnapshot = await teamRef.once('value');
-            let members = teamSnapshot.val()?.members || [invite.fromUserId];
-            if (!members.includes(currentUser.uid)) members.push(currentUser.uid);
-            
-            await teamRef.set({ leader: invite.fromUserId, members: members });
-            for (const memberId of members) {
-              await database.ref('teams/' + memberId).set({ leader: invite.fromUserId, members: members });
-            }
-            
-            showToast(`✅ Вы присоединились к команде ${invite.fromUserName}!`);
-            renderPlayersList();
-            updateMyTeamDisplay();
-            setupChat();
-          } else {
-            await database.ref('invites/' + currentUser.uid + '/' + snapshot.key).update({ status: 'declined' });
-            showToast(`❌ Вы отклонили приглашение`);
-          }
-        }
-      });
-    }
-
-    async function updateMyTeamDisplay() {
-      const myTeamCard = document.getElementById('myTeamCard');
-      const teamMembersDiv = document.getElementById('teamMembers');
-      
-      if (!currentUser) {
-        myTeamCard.style.display = 'none';
-        return;
-      }
-      
-      const teamSnapshot = await database.ref('teams/' + currentUser.uid).once('value');
-      const team = teamSnapshot.val();
-      
-      if (team && team.members && team.members.length > 1) {
-        myTeamCard.style.display = 'block';
-        const membersData = [];
-        for (const memberId of team.members) {
-          const userSnapshot = await database.ref('users/' + memberId).once('value');
-          if (userSnapshot.exists()) {
-            membersData.push({ id: memberId, ...userSnapshot.val() });
-          }
-        }
-        
-        teamMembersDiv.innerHTML = membersData.map(member => `
-          <div class="team-member">
-            <div class="user-avatar" style="width: 32px; height: 32px; font-size: 14px;">${member.username.charAt(0).toUpperCase()}</div>
-            <span>${escapeHtml(member.username)}</span>
-            ${member.id === team.leader ? '<span style="font-size: 10px; color: #c4b5fd;">👑</span>' : ''}
-          </div>
-        `).join('');
-      } else {
-        myTeamCard.style.display = 'none';
-      }
-    }
-
-    async function leaveTeam() {
-      if (!currentUser) return;
-      
-      const teamSnapshot = await database.ref('teams/' + currentUser.uid).once('value');
-      const team = teamSnapshot.val();
-      
-      if (team) {
-        const newMembers = team.members.filter(id => id !== currentUser.uid);
-        if (newMembers.length === 0) {
-          await database.ref('teams/' + currentUser.uid).remove();
-          if (team.leader !== currentUser.uid) {
-            await database.ref('teams/' + team.leader).remove();
-          }
-        } else {
-          const newLeader = newMembers[0];
-          for (const memberId of newMembers) {
-            await database.ref('teams/' + memberId).set({ leader: newLeader, members: newMembers });
-          }
-        }
-        await database.ref('teams/' + currentUser.uid).remove();
-        showToast('👋 Вы покинули команду');
-        renderPlayersList();
-        updateMyTeamDisplay();
-        setupChat();
-      }
-    }
-
-    function checkAuthAndFind() {
-      if (currentUser) {
-        showToast('🔍 Поиск тиммейтов...');
-      } else {
-        showToast('🔐 Сначала войдите в аккаунт');
-        openLoginModal();
-      }
-    }
-
-    function updateUIForLoggedInUser(user) {
-      const authButtons = document.getElementById('authButtons');
-      const userInfo = document.getElementById('userInfo');
-      const userName = document.getElementById('userName');
-      const userAvatar = document.getElementById('userAvatar');
-
-      if (user) {
-        authButtons.style.display = 'none';
-        userInfo.style.display = 'flex';
-        userName.textContent = user.displayName || user.email;
-        userAvatar.textContent = (user.displayName || user.email).charAt(0).toUpperCase();
-      } else {
-        authButtons.style.display = 'flex';
-        userInfo.style.display = 'none';
-      }
-    }
-
-    auth.onAuthStateChanged(async (user) => {
-      currentUser = user;
-      updateUIForLoggedInUser(user);
-      if (user) {
-        await renderPlayersList();
-        listenForInvites();
-        await updateMyTeamDisplay();
-        await setupChat();
-      } else {
-        await renderPlayersList();
-        document.getElementById('myTeamCard').style.display = 'none';
-        document.getElementById('chatCard').style.display = 'none';
-      }
-    });
-
-    window.onclick = function(event) {
-      const loginModal = document.getElementById('loginModal');
-      const registerModal = document.getElementById('registerModal');
-      if (event.target === loginModal) closeLoginModal();
-      if (event.target === registerModal) closeRegisterModal();
-    }
-
-    renderPlayersList();
-  </script>
-</body>
-</html>
+        await
