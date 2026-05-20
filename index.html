@@ -5,11 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Well Played — найди тиммейтов для любых игр</title>
   
-  <!-- FAVICON для вкладки - исправленное смещение -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%238b5cf6'/><text x='50' y='72' font-size='50' text-anchor='middle' fill='white' font-weight='bold' font-family='Arial, sans-serif'>WP</text></svg>">
-  
-  <!-- Запасной вариант для старых браузеров -->
-  <link rel="shortcut icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%238b5cf6'/><text x='50' y='72' font-size='50' text-anchor='middle' fill='white' font-weight='bold' font-family='Arial, sans-serif'>WP</text></svg>">
+  <!-- FAVICON для вкладки - ваша картинка logo.png -->
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="shortcut icon" type="image/png" href="logo.png">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -88,26 +86,13 @@
       cursor: pointer;
     }
 
-    /* Стиль для картинки-логотипа */
+    /* Стиль для вашей картинки-логотипа */
     .logo-image {
       width: 48px;
       height: 48px;
       border-radius: 50%;
       object-fit: cover;
       display: block;
-    }
-
-    /* Градиентный логотип (если картинка не загрузилась) */
-    .logo-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #8b5cf6, #22d3ee);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: 24px;
     }
 
     .logo h1 {
@@ -871,10 +856,9 @@
 
   <header>
     <div class="container nav">
-      <!-- ЛОГОТИП НА САЙТЕ (слева сверху) - ФИОЛЕТОВЫЙ КРУГ С WP -->
+      <!-- ЛОГОТИП НА САЙТЕ (слева сверху) - ВАША КАРТИНКА logo.png -->
       <div class="logo" onclick="scrollToTop()">
-        <!-- Градиентный логотип с WP -->
-        <div class="logo-icon">WP</div>
+        <img src="logo.png" alt="Well Played" class="logo-image">
         <div>
           <h1>well played</h1>
           <p>find your perfect teammates</p>
