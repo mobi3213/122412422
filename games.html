@@ -9,264 +9,39 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%238b5cf6'/><text x='50' y='72' font-size='50' text-anchor='middle' fill='white' font-weight='bold' font-family='Arial, sans-serif'>WP</text></svg>">
   
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background: #090d18;
-      color: white;
-      overflow-x: hidden;
-    }
-
-    .bg-glow {
-      position: fixed;
-      width: 700px;
-      height: 700px;
-      background: radial-gradient(circle, rgba(138,92,246,0.35), transparent 70%);
-      top: -200px;
-      right: -150px;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    .bg-glow2 {
-      position: fixed;
-      width: 600px;
-      height: 600px;
-      background: radial-gradient(circle, rgba(43,210,255,0.25), transparent 70%);
-      bottom: -200px;
-      left: -150px;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      backdrop-filter: blur(10px);
-      background: rgba(9, 13, 24, 0.75);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-    }
-
-    .container {
-      width: min(1200px, 92%);
-      margin: auto;
-      position: relative;
-      z-index: 2;
-      padding: 40px 0;
-    }
-
-    .nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 22px 0;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      cursor: pointer;
-    }
-
-    .logo-image {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .logo h1 {
-      font-size: 26px;
-      font-weight: 800;
-    }
-
-    .logo p {
-      font-size: 12px;
-      color: rgba(255,255,255,0.5);
-    }
-
-    nav ul {
-      display: flex;
-      gap: 34px;
-      list-style: none;
-    }
-
-    nav a {
-      color: rgba(255,255,255,0.7);
-      text-decoration: none;
-      transition: 0.2s;
-      cursor: pointer;
-    }
-
-    nav a:hover, nav a.active {
-      color: white;
-      background: linear-gradient(135deg, #8b5cf6, #22d3ee);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .btn {
-      border: none;
-      padding: 14px 24px;
-      border-radius: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: 0.25s;
-      font-family: 'Inter', sans-serif;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #8b5cf6, #22d3ee);
-      color: white;
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      opacity: 0.9;
-    }
-
-    .btn-secondary {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.08);
-      color: white;
-      text-decoration: none;
-      display: inline-block;
-    }
-
-    .btn-secondary:hover {
-      background: rgba(255,255,255,0.12);
-      transform: translateY(-2px);
-    }
-
-    .page-header {
-      margin-bottom: 40px;
-    }
-
-    .page-header h1 {
-      font-size: 48px;
-      margin-bottom: 16px;
-      background: linear-gradient(135deg, #8b5cf6, #22d3ee);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .page-header p {
-      color: rgba(255,255,255,0.6);
-      font-size: 18px;
-    }
-
-    .games-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
-      margin-top: 20px;
-    }
-
-    .game-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 28px;
-      padding: 28px;
-      transition: 0.25s;
-      text-align: center;
-    }
-
-    .game-card:hover {
-      transform: translateY(-4px);
-      border-color: rgba(139,92,246,0.4);
-    }
-
-    .game-icon {
-      width: 80px;
-      height: 80px;
-      border-radius: 20px;
-      background: linear-gradient(135deg, #8b5cf6, #22d3ee);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 40px;
-      margin: 0 auto 20px;
-    }
-
-    .game-card h3 {
-      font-size: 24px;
-      margin-bottom: 12px;
-    }
-
-    .game-card p {
-      color: rgba(255,255,255,0.5);
-      margin-bottom: 20px;
-    }
-
-    .game-stats {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 1px solid rgba(255,255,255,0.08);
-    }
-
-    .game-stats span {
-      color: #86efac;
-      font-weight: bold;
-    }
-
-    footer {
-      border-top: 1px solid rgba(255,255,255,0.08);
-      padding: 32px 0;
-      color: rgba(255,255,255,0.45);
-      margin-top: 60px;
-    }
-
-    .footer-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 20px;
-    }
-
-    .footer-links {
-      display: flex;
-      gap: 24px;
-    }
-
-    .footer-links a {
-      color: rgba(255,255,255,0.55);
-      text-decoration: none;
-      cursor: pointer;
-    }
-
-    .footer-links a:hover {
-      color: white;
-    }
-
-    @media (max-width: 900px) {
-      .games-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 600px) {
-      .games-grid {
-        grid-template-columns: 1fr;
-      }
-      nav ul {
-        display: none;
-      }
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #090d18; color: white; }
+    .bg-glow { position: fixed; width: 700px; height: 700px; background: radial-gradient(circle, rgba(138,92,246,0.35), transparent 70%); top: -200px; right: -150px; z-index: 0; pointer-events: none; }
+    .bg-glow2 { position: fixed; width: 600px; height: 600px; background: radial-gradient(circle, rgba(43,210,255,0.25), transparent 70%); bottom: -200px; left: -150px; z-index: 0; pointer-events: none; }
+    header { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); background: rgba(9,13,24,0.75); border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .container { width: min(1200px, 92%); margin: auto; position: relative; z-index: 2; padding: 40px 0; }
+    .nav { display: flex; align-items: center; justify-content: space-between; padding: 22px 0; flex-wrap: wrap; gap: 16px; }
+    .logo { display: flex; align-items: center; gap: 14px; cursor: pointer; }
+    .logo-image { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
+    .logo h1 { font-size: 26px; font-weight: 800; }
+    .logo p { font-size: 12px; color: rgba(255,255,255,0.5); }
+    nav ul { display: flex; gap: 34px; list-style: none; }
+    nav a { color: rgba(255,255,255,0.7); text-decoration: none; transition: 0.2s; }
+    nav a:hover, nav a.active { color: white; background: linear-gradient(135deg, #8b5cf6, #22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .btn { border: none; padding: 14px 24px; border-radius: 16px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .btn-primary { background: linear-gradient(135deg, #8b5cf6, #22d3ee); color: white; }
+    .btn-primary:hover { transform: translateY(-2px); opacity: 0.9; }
+    .btn-secondary { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: white; text-decoration: none; display: inline-block; }
+    .page-header h1 { font-size: 48px; margin-bottom: 16px; background: linear-gradient(135deg, #8b5cf6, #22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .games-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .game-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 28px; padding: 28px; text-align: center; transition: 0.25s; }
+    .game-card:hover { transform: translateY(-4px); border-color: rgba(139,92,246,0.4); }
+    .game-icon { width: 80px; height: 80px; background: linear-gradient(135deg, #8b5cf6, #22d3ee); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 0 auto 20px; }
+    .game-card h3 { font-size: 24px; margin-bottom: 12px; }
+    .game-count { color: #86efac; font-weight: bold; margin: 12px 0; }
+    footer { border-top: 1px solid rgba(255,255,255,0.08); padding: 32px 0; margin-top: 60px; }
+    .footer-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+    @media (max-width: 900px) { .games-grid { grid-template-columns: repeat(2, 1fr); } nav ul { display: none; } }
+    @media (max-width: 600px) { .games-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -276,13 +51,9 @@
   <header>
     <div class="container nav">
       <div class="logo" onclick="window.location.href='index.html'">
-        <img src="logo.png" alt="Well Played" class="logo-image" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%238b5cf6%22/><text x=%2250%22 y=%2272%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22 font-weight=%22bold%22>WP</text></svg>'">
-        <div>
-          <h1>well played</h1>
-          <p>find your perfect teammates</p>
-        </div>
+        <img src="logo.png" alt="Logo" class="logo-image" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%238b5cf6%22/><text x=%2250%22 y=%2272%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22white%22 font-weight=%22bold%22>WP</text></svg>'">
+        <div><h1>well played</h1><p>find your perfect teammates</p></div>
       </div>
-
       <nav>
         <ul>
           <li><a href="games.html" class="active">Игры</a></li>
@@ -291,115 +62,59 @@
           <li><a href="community.html">Сообщество</a></li>
         </ul>
       </nav>
-
       <button class="btn btn-primary" onclick="window.location.href='index.html'">На главную</button>
     </div>
   </header>
 
   <main class="container">
-    <div class="page-header">
-      <h1>Популярные игры</h1>
-      <p>Выбери свою игру и найди тиммейтов</p>
-    </div>
-
-    <div class="games-grid">
-      <div class="game-card">
-        <div class="game-icon">🎯</div>
-        <h3>CS2</h3>
-        <p>Классический тактический шутер</p>
-        <div class="game-stats">
-          <div>👥 <span>234</span> игроков</div>
-          <div>🎮 <span>12</span> команд</div>
-        </div>
-        <button class="btn btn-secondary" style="margin-top: 16px;" onclick="showToast('Поиск игроков в CS2')">Найти команду</button>
-      </div>
-
-      <div class="game-card">
-        <div class="game-icon">⚔️</div>
-        <h3>Dota 2</h3>
-        <p>MOBA с глубокой стратегией</p>
-        <div class="game-stats">
-          <div>👥 <span>187</span> игроков</div>
-          <div>🎮 <span>8</span> команд</div>
-        </div>
-        <button class="btn btn-secondary" style="margin-top: 16px;" onclick="showToast('Поиск игроков в Dota 2')">Найти команду</button>
-      </div>
-
-      <div class="game-card">
-        <div class="game-icon">🔫</div>
-        <h3>Valorant</h3>
-        <p>Геройский тактический шутер</p>
-        <div class="game-stats">
-          <div>👥 <span>156</span> игроков</div>
-          <div>🎮 <span>10</span> команд</div>
-        </div>
-        <button class="btn btn-secondary" style="margin-top: 16px;" onclick="showToast('Поиск игроков в Valorant')">Найти команду</button>
-      </div>
-
-      <div class="game-card">
-        <div class="game-icon">🏆</div>
-        <h3>League of Legends</h3>
-        <p>Самая популярная MOBA в мире</p>
-        <div class="game-stats">
-          <div>👥 <span>98</span> игроков</div>
-          <div>🎮 <span>5</span> команд</div>
-        </div>
-        <button class="btn btn-secondary" style="margin-top: 16px;" onclick="showToast('Поиск игроков в LoL')">Найти команду</button>
-      </div>
-
-      <div class="game-card">
-        <div class="game-icon">🪂</div>
-        <h3>PUBG</h3>
-        <p>Королевская битва</p>
-        <div class="game-stats">
-          <div>👥 <span>76</span> игроков</div>
-          <div>🎮 <span>4</span> команды</div>
-        </div>
-        <button class="btn btn-secondary" style="margin-top: 16px;" onclick="showToast('Поиск игроков в PUBG')">Найти команду</button>
-      </div>
-
-      <div class="game-card">
-        <div class="game-icon">💣</div>
-        <h3>Rainbow Six Siege</h3>
-        <p>Тактический шутер с разрушениями</p>
-        <div class="game-stats">
-          <div>👥 <span>52</span> игроков</div>
-          <div>🎮 <span>3</span> команды</div>
-        </div>
-        <button class="btn btn-secondary" style="margin-top: 16px;" onclick="showToast('Поиск игроков в R6 Siege')">Найти команду</button>
-      </div>
-    </div>
+    <div class="page-header"><h1>Популярные игры</h1></div>
+    <div class="games-grid" id="gamesGrid"></div>
   </main>
 
-  <footer>
-    <div class="container footer-content">
-      <div>© 2026 well played</div>
-      <div class="footer-links">
-        <a href="#" onclick="showToast('📢 Discord — скоро')">Discord</a>
-        <a href="#" onclick="showToast('🎮 Steam — скоро')">Steam</a>
-        <a href="#" onclick="showToast('📱 VK — скоро')">VK</a>
-      </div>
-    </div>
-  </footer>
+  <footer><div class="container footer-content"><div>© 2026 well played</div></div></footer>
 
   <script>
-    function showToast(message) {
-      // Создаём временное уведомление
-      const toast = document.createElement('div');
-      toast.textContent = message;
-      toast.style.position = 'fixed';
-      toast.style.bottom = '30px';
-      toast.style.right = '30px';
-      toast.style.background = '#1e293b';
-      toast.style.border = '1px solid rgba(34,211,238,0.5)';
-      toast.style.borderRadius = '16px';
-      toast.style.padding = '14px 24px';
-      toast.style.color = 'white';
-      toast.style.zIndex = '1001';
-      toast.style.backdropFilter = 'blur(10px)';
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 2000);
+    const firebaseConfig = {
+      apiKey: "AIzaSyDBAZ2887ekcEGUcb9gTh2mwRLkrYDLqUE",
+      authDomain: "well-played-app.firebaseapp.com",
+      databaseURL: "https://well-played-app-default-rtdb.firebaseio.com",
+      projectId: "well-played-app",
+      storageBucket: "well-played-app.firebasestorage.app",
+      messagingSenderId: "926709321013",
+      appId: "1:926709321013:web:b90a53e2a4e0e9a228507c"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    const games = [
+      { name: "CS2", icon: "🎯", emoji: "🎯" },
+      { name: "Dota 2", icon: "⚔️", emoji: "⚔️" },
+      { name: "Valorant", icon: "🔫", emoji: "🔫" },
+      { name: "League of Legends", icon: "🏆", emoji: "🏆" },
+      { name: "PUBG", icon: "🪂", emoji: "🪂" },
+      { name: "Rainbow Six Siege", icon: "💣", emoji: "💣" }
+    ];
+
+    async function renderGames() {
+      const snapshot = await database.ref('users').once('value');
+      const users = snapshot.val();
+      const userList = users ? Object.values(users) : [];
+      
+      const gamesGrid = document.getElementById('gamesGrid');
+      gamesGrid.innerHTML = games.map(game => {
+        const count = userList.filter(u => u.favoriteGame === game.name).length;
+        return `
+          <div class="game-card">
+            <div class="game-icon">${game.emoji}</div>
+            <h3>${game.name}</h3>
+            <div class="game-count">👥 ${count} игроков</div>
+            <button class="btn btn-secondary" onclick="window.location.href='index.html'">Найти команду</button>
+          </div>
+        `;
+      }).join('');
     }
+    
+    renderGames();
   </script>
 </body>
 </html>
